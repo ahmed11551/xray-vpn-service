@@ -2,8 +2,8 @@
 
 🚀 **Полная инфраструктура для коммерческого сервиса продажи конфигураций защищённого сетевого доступа**
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/xray-vpn-service)
-[![GitHub](https://img.shields.io/github/license/YOUR_USERNAME/xray-vpn-service)](https://github.com/YOUR_USERNAME/xray-vpn-service/blob/main/LICENSE)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ahmed11551/xray-vpn-service)
+[![GitHub](https://img.shields.io/github/license/ahmed11551/xray-vpn-service)](https://github.com/ahmed11551/xray-vpn-service/blob/main/LICENSE)
 
 ## ✨ Особенности
 
@@ -50,10 +50,17 @@ xray-service/
 
 ## 🚀 Быстрый старт
 
-### 1. Подготовка окружения
+### 1. Клонирование проекта
 ```bash
 # Клонирование проекта
-git clone <repository-url> /opt/xray-service
+git clone https://github.com/ahmed11551/xray-vpn-service.git
+cd xray-vpn-service
+```
+
+### 2. Подготовка окружения
+```bash
+# Перемещение в рабочую директорию
+sudo mv xray-vpn-service /opt/xray-service
 cd /opt/xray-service
 
 # Установка зависимостей
