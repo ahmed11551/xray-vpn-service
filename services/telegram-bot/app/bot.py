@@ -9,7 +9,7 @@ from aiohttp import web
 import redis.asyncio as redis
 
 from app.config import settings
-from app.handlers import start, profile, configs, subscription, referral, support
+from app.handlers import start, profile, configs, subscription, referral, support, url
 from app.middlewares import auth, throttling, logging_middleware
 from app.services.user_service import UserService
 from app.services.payment_service import PaymentService
@@ -46,6 +46,7 @@ dp.include_router(configs.router)
 dp.include_router(subscription.router)
 dp.include_router(referral.router)
 dp.include_router(support.router)
+dp.include_router(url.router)
 
 # Инициализация сервисов
 user_service = UserService()

@@ -6,7 +6,7 @@ from aiogram.fsm.state import State, StatesGroup
 import logging
 
 from app.services.user_service import UserService
-from app.keyboards.main import get_main_keyboard, get_start_keyboard
+from app.keyboards.main import get_main_keyboard, get_start_keyboard, get_url_keyboard
 from app.schemas.user import UserCreate
 from app.utils.formatters import format_user_info
 
@@ -129,6 +129,7 @@ async def cmd_help(message: Message):
 /start - Начать работу с ботом
 /profile - Информация о профиле
 /configs - Мои конфигурации
+/url - Получить URL конфигурации
 /subscribe - Купить подписку
 /referral - Реферальная программа
 /support - Связаться с поддержкой
@@ -138,6 +139,13 @@ async def cmd_help(message: Message):
 2. Выберите "Получить тестовый конфиг" (бесплатно на 1 день)
 3. Скопируйте VLESS ссылку
 4. Добавьте в ваш Xray клиент
+
+<b>Новый функционал:</b>
+🔗 <b>Команда /url</b> - Получение URL конфигурации
+• Веб-интерфейс: https://xray-vpn-service-seven.vercel.app/
+• Мобильные клиенты (Android/iOS)
+• Десктопные клиенты (Windows/Mac/Linux)
+• Файлы конфигурации и QR коды
 
 <b>Поддерживаемые клиенты:</b>
 • v2rayNG (Android)
@@ -193,6 +201,49 @@ async def cmd_profile(message: Message):
         logger.error(f"Ошибка получения профиля: {e}")
         await message.answer(
             "❌ Ошибка получения профиля. Попробуйте позже."
+        )
+
+@router.callback_query(F.data == "get_url")
+async def get_url_menu(callback: CallbackQuery):
+    """Обработчик кнопки 'Получить URL'"""
+    try:
+        user_id = callback.from_user.id
+        user = await user_service.get_user_by_telegram_id(user_id)
+        
+        if not user:
+            await callback.message.edit_text(
+                "❌ Пользователь не найден. Используйте /start для регистрации."
+            )
+            return
+        
+        url_text = f"""
+🔗 <b>Получение URL конфигурации</b>
+
+Выберите тип URL который вам нужен:
+
+🌐 <b>Веб-интерфейс:</b>
+• Основной сайт: https://xray-vpn-service-seven.vercel.app/
+• API документация: https://xray-vpn-service-seven.vercel.app/docs
+
+📱 <b>Мобильные клиенты:</b>
+• v2rayNG (Android)
+• Shadowrocket (iOS)
+• Clash (Windows/Mac)
+
+💻 <b>Десктопные клиенты:</b>
+• Qv2ray (Windows/Mac/Linux)
+• Clash for Windows
+• v2rayN (Windows)
+
+Выберите действие:
+        """
+        
+        await callback.message.edit_text(url_text, reply_markup=get_url_keyboard())
+        
+    except Exception as e:
+        logger.error(f"Ошибка обработки кнопки 'Получить URL': {e}")
+        await callback.message.edit_text(
+            "❌ Произошла ошибка. Попробуйте позже."
         )
 
 @router.callback_query(F.data == "main_menu")

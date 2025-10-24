@@ -17,6 +17,34 @@ def get_start_keyboard() -> InlineKeyboardMarkup:
     builder.adjust(1)
     return builder.as_markup()
 
+def get_url_keyboard() -> InlineKeyboardMarkup:
+    """Клавиатура для работы с URL"""
+    builder = InlineKeyboardBuilder()
+    
+    builder.add(InlineKeyboardButton(
+        text="🌐 Веб-интерфейс",
+        callback_data="get_web_url"
+    ))
+    builder.add(InlineKeyboardButton(
+        text="📱 Мобильные клиенты",
+        callback_data="get_mobile_url"
+    ))
+    builder.add(InlineKeyboardButton(
+        text="💻 Десктопные клиенты",
+        callback_data="get_desktop_url"
+    ))
+    builder.add(InlineKeyboardButton(
+        text="📄 Файл конфигурации",
+        callback_data="get_config_file"
+    ))
+    builder.add(InlineKeyboardButton(
+        text="🏠 Главное меню",
+        callback_data="main_menu"
+    ))
+    
+    builder.adjust(2, 2, 1)
+    return builder.as_markup()
+
 def get_main_keyboard() -> InlineKeyboardMarkup:
     """Основная клавиатура"""
     builder = InlineKeyboardBuilder()
@@ -24,6 +52,10 @@ def get_main_keyboard() -> InlineKeyboardMarkup:
     builder.add(InlineKeyboardButton(
         text="📱 Мои конфигурации",
         callback_data="my_configs"
+    ))
+    builder.add(InlineKeyboardButton(
+        text="🔗 Получить URL",
+        callback_data="get_url"
     ))
     builder.add(InlineKeyboardButton(
         text="💳 Подписка",
@@ -46,7 +78,7 @@ def get_main_keyboard() -> InlineKeyboardMarkup:
         callback_data="help"
     ))
     
-    builder.adjust(2, 2, 2)
+    builder.adjust(2, 2, 2, 1)
     return builder.as_markup()
 
 def get_configs_keyboard() -> InlineKeyboardMarkup:
