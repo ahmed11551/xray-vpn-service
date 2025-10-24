@@ -1,12 +1,12 @@
 import asyncio
 import logging
+import os
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 from aiohttp import web
-import redis.asyncio as redis
 
 from app.config import settings
 from app.handlers import start, profile, configs, subscription, referral, support, url
@@ -16,13 +16,10 @@ from app.services.payment_service import PaymentService
 
 # Настройка логирования
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, settings.LOG_LEVEL),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
-
-# Инициализация Redis
-redis_client = redis.from_url(settings.REDIS_URL)
 
 # Создание бота
 bot = Bot(
@@ -30,8 +27,8 @@ bot = Bot(
     default=DefaultBotProperties(parse_mode=ParseMode.HTML)
 )
 
-# Создание диспетчера
-storage = RedisStorage(redis_client)
+# Создание диспетчера с MemoryStorage для Vercel
+storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 
 # Регистрация middleware
@@ -54,35 +51,46 @@ payment_service = PaymentService()
 
 async def on_startup():
     """Инициализация при запуске"""
-    logger.info("Запуск Telegram Bot...")
+    logger.info("Запуск Telegram Bot на Vercel...")
     
-    # Установка webhook
-    webhook_url = f"{settings.WEBHOOK_URL}/webhook/"
+    # Установка webhook для Vercel
+    webhook_url = f"{settings.webhook_url}/api/bot/webhook"
     await bot.set_webhook(
         url=webhook_url,
         secret_token=settings.WEBHOOK_SECRET
     )
     
-    # Инициализация сервисов
-    await user_service.initialize()
-    await payment_service.initialize()
+    # Инициализация сервисов (упрощенная для Vercel)
+    try:
+        await user_service.initialize()
+        await payment_service.initialize()
+    except Exception as e:
+        logger.warning(f"Ошибка инициализации сервисов: {e}")
     
-    logger.info(f"Bot запущен. Webhook: {webhook_url}")
+    logger.info(f"Bot запущен на Vercel. Webhook: {webhook_url}")
 
 async def on_shutdown():
     """Очистка при остановке"""
     logger.info("Остановка Telegram Bot...")
     
     # Удаление webhook
-    await bot.delete_webhook()
+    try:
+        await bot.delete_webhook()
+    except Exception as e:
+        logger.warning(f"Ошибка удаления webhook: {e}")
     
     # Очистка сервисов
-    await user_service.cleanup()
-    await payment_service.cleanup()
+    try:
+        await user_service.cleanup()
+        await payment_service.cleanup()
+    except Exception as e:
+        logger.warning(f"Ошибка очистки сервисов: {e}")
     
     # Закрытие соединений
-    await bot.session.close()
-    await redis_client.close()
+    try:
+        await bot.session.close()
+    except Exception as e:
+        logger.warning(f"Ошибка закрытия сессии: {e}")
     
     logger.info("Bot остановлен")
 
@@ -150,31 +158,39 @@ async def health_check(request):
         )
 
 def create_app():
-    """Создание aiohttp приложения"""
+    """Создание aiohttp приложения для Vercel"""
     app = web.Application()
     
-    # Регистрация маршрутов
-    app.router.add_post("/webhook/", webhook_handler)
-    app.router.add_post("/payment/yookassa/webhook", payment_webhook_handler)
-    app.router.add_post("/payment/robokassa/webhook", payment_webhook_handler)
-    app.router.add_post("/payment/crypto/webhook", payment_webhook_handler)
-    app.router.add_get("/health", health_check)
+    # Регистрация маршрутов для Vercel
+    app.router.add_post("/api/bot/webhook", webhook_handler)
+    app.router.add_post("/api/payment/yookassa/webhook", payment_webhook_handler)
+    app.router.add_post("/api/payment/robokassa/webhook", payment_webhook_handler)
+    app.router.add_post("/api/payment/crypto/webhook", payment_webhook_handler)
+    app.router.add_get("/api/bot/health", health_check)
     
-    # Настройка обработчика Telegram
+    # Настройка обработчика Telegram для Vercel
     webhook_handler_obj = SimpleRequestHandler(
         dispatcher=dp,
         bot=bot,
         secret_token=settings.WEBHOOK_SECRET
     )
-    webhook_handler_obj.register(app, path="/webhook/")
+    webhook_handler_obj.register(app, path="/api/bot/webhook")
     
     # Настройка приложения
     setup_application(app, dp, bot=bot)
     
     return app
 
+# Vercel handler
+app = create_app()
+
+async def vercel_handler(request):
+    """Обработчик для Vercel"""
+    return await app._handle_request(request)
+
+# Для локального запуска
 async def main():
-    """Основная функция"""
+    """Основная функция для локального запуска"""
     # Создание приложения
     app = create_app()
     
