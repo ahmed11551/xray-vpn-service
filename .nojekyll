@@ -1,0 +1,10 @@
+# Этот файл отключает GitHub Pages для данного репозитория
+# Проект требует серверного окружения с базой данных
+
+# Для развертывания используйте:
+# - Vercel: https://vercel.com/new/clone?repository-url=https://github.com/ahmed11551/xray-vpn-service
+# - Railway: https://railway.app/template/ahmed11551/xray-vpn-service
+# - Heroku: https://heroku.com/deploy?template=https://github.com/ahmed11551/xray-vpn-service
+# - Docker: docker-compose up -d
+
+# GitHub Pages не поддерживается для серверных приложений

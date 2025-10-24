@@ -14,6 +14,22 @@
 - 🐳 **Docker** - Простое развертывание и масштабирование
 - 🔒 **Безопасность** - SNI маскировка и защита от DPI
 
+## 🌐 Способы развертывания
+
+### 🚀 Vercel (Рекомендуется)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/ahmed11551/xray-vpn-service)
+
+### 🚂 Railway
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/ahmed11551/xray-vpn-service)
+
+### 🐳 Docker (Собственный сервер)
+```bash
+docker-compose up -d
+```
+
+### ☁️ Heroku
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/ahmed11551/xray-vpn-service)
+
 ## 📁 Структура проекта
 
 ```
@@ -50,6 +66,9 @@ xray-service/
 
 ## 🚀 Быстрый старт
 
+### ⚠️ Важно: GitHub Pages не поддерживается!
+Это серверное приложение требует базу данных и переменные окружения. Используйте Vercel, Railway или собственный сервер.
+
 ### 1. Клонирование проекта
 ```bash
 # Клонирование проекта
@@ -59,7 +78,7 @@ cd xray-vpn-service
 
 ### 2. Подготовка окружения
 ```bash
-# Перемещение в рабочую директорию
+# Перемещение в рабочую директорию (для Linux сервера)
 sudo mv xray-vpn-service /opt/xray-service
 cd /opt/xray-service
 
