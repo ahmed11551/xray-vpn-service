@@ -1,0 +1,192 @@
+# Правила алертинга для Xray сервиса
+
+groups:
+  - name: xray-servers
+    rules:
+      # Критическая недоступность сервера
+      - alert: XrayServerDown
+        expr: up{job="xray-servers"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Xray сервер недоступен"
+          description: "Xray сервер {{ $labels.instance }} недоступен более 1 минуты"
+
+      # Высокая загрузка CPU
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокая загрузка CPU"
+          description: "CPU загрузка на {{ $labels.instance }} составляет {{ $value }}%"
+
+      # Высокое использование памяти
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое использование памяти"
+          description: "Использование памяти на {{ $labels.instance }} составляет {{ $value }}%"
+
+      # Мало свободного места на диске
+      - alert: LowDiskSpace
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Мало свободного места на диске"
+          description: "Использование диска на {{ $labels.instance }} составляет {{ $value }}%"
+
+      # Много активных соединений
+      - alert: HighConnectionCount
+        expr: node_netstat_Tcp_CurrEstab > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Много активных соединений"
+          description: "Количество активных соединений на {{ $labels.instance }}: {{ $value }}"
+
+  - name: database
+    rules:
+      # PostgreSQL недоступен
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL недоступен"
+          description: "PostgreSQL сервер недоступен"
+
+      # Много активных соединений к БД
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_database_numbackends > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Много соединений к PostgreSQL"
+          description: "Количество активных соединений к БД: {{ $value }}"
+
+      # Redis недоступен
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis недоступен"
+          description: "Redis сервер недоступен"
+
+      # Высокое использование памяти Redis
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое использование памяти Redis"
+          description: "Использование памяти Redis: {{ $value }}%"
+
+  - name: services
+    rules:
+      # Telegram Bot недоступен
+      - alert: TelegramBotDown
+        expr: up{job="telegram-bot"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Telegram Bot недоступен"
+          description: "Telegram Bot сервис недоступен"
+
+      # Xray Manager недоступен
+      - alert: XrayManagerDown
+        expr: up{job="xray-manager"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Xray Manager недоступен"
+          description: "Xray Manager сервис недоступен"
+
+      # Payment Service недоступен
+      - alert: PaymentServiceDown
+        expr: up{job="payment-service"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Payment Service недоступен"
+          description: "Payment Service недоступен"
+
+      # Высокая частота ошибок в сервисах
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокая частота ошибок"
+          description: "Частота ошибок в {{ $labels.job }}: {{ $value }}%"
+
+  - name: network
+    rules:
+      # Проблемы с DNS
+      - alert: DNSResolutionFailed
+        expr: probe_success{job="blackbox"} == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Проблемы с DNS резолюцией"
+          description: "Не удается разрешить {{ $labels.instance }}"
+
+      # Высокое время отклика
+      - alert: HighResponseTime
+        expr: probe_duration_seconds{job="blackbox"} > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое время отклика"
+          description: "Время отклика для {{ $labels.instance }}: {{ $value }}s"
+
+  - name: business-metrics
+    rules:
+      # Низкая конверсия в покупки
+      - alert: LowConversionRate
+        expr: (rate(payments_successful_total[1h]) / rate(users_registered_total[1h])) * 100 < 5
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Низкая конверсия в покупки"
+          description: "Конверсия за последний час: {{ $value }}%"
+
+      # Много неуспешных платежей
+      - alert: HighPaymentFailureRate
+        expr: rate(payments_failed_total[1h]) / rate(payments_total[1h]) * 100 > 10
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокая частота неуспешных платежей"
+          description: "Частота неуспешных платежей: {{ $value }}%"
+
+      # Резкое падение регистраций
+      - alert: RegistrationDrop
+        expr: rate(users_registered_total[1h]) < rate(users_registered_total[6h]) / 6 * 0.5
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Резкое падение регистраций"
+          description: "Регистрации упали на {{ $value }}%"

@@ -1,0 +1,178 @@
+# Docker Compose для Xray VLESS + Reality сервиса
+
+version: '3.8'
+
+services:
+  # Load Balancer
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - xray-server-1
+      - xray-server-2
+      - xray-server-3
+    restart: unless-stopped
+
+  # Xray Servers
+  xray-server-1:
+    image: teddysun/xray:latest
+    ports:
+      - "8443:443"
+    volumes:
+      - ./xray/config1.json:/etc/xray/config.json
+      - ./xray/ssl:/etc/xray/ssl
+    environment:
+      - XRAY_VMESS_AEAD_FORCED=false
+    restart: unless-stopped
+
+  xray-server-2:
+    image: teddysun/xray:latest
+    ports:
+      - "8444:443"
+    volumes:
+      - ./xray/config2.json:/etc/xray/config.json
+      - ./xray/ssl:/etc/xray/ssl
+    environment:
+      - XRAY_VMESS_AEAD_FORCED=false
+    restart: unless-stopped
+
+  xray-server-3:
+    image: teddysun/xray:latest
+    ports:
+      - "8445:443"
+    volumes:
+      - ./xray/config3.json:/etc/xray/config.json
+      - ./xray/ssl:/etc/xray/ssl
+    environment:
+      - XRAY_VMESS_AEAD_FORCED=false
+    restart: unless-stopped
+
+  # Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: xray_service
+      POSTGRES_USER: xray_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # Telegram Bot
+  telegram-bot:
+    build: ./services/telegram-bot
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - DATABASE_URL=postgresql://xray_user:${DB_PASSWORD}@postgres:5432/xray_service
+      - REDIS_URL=redis://redis:6379
+      - YOOKASSA_SHOP_ID=${YOOKASSA_SHOP_ID}
+      - YOOKASSA_SECRET_KEY=${YOOKASSA_SECRET_KEY}
+      - ROBOKASSA_MERCHANT_LOGIN=${ROBOKASSA_MERCHANT_LOGIN}
+      - ROBOKASSA_PASSWORD_1=${ROBOKASSA_PASSWORD_1}
+      - ROBOKASSA_PASSWORD_2=${ROBOKASSA_PASSWORD_2}
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  # Xray Manager
+  xray-manager:
+    build: ./services/xray-manager
+    environment:
+      - DATABASE_URL=postgresql://xray_user:${DB_PASSWORD}@postgres:5432/xray_service
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  # Payment Service
+  payment-service:
+    build: ./services/payment-service
+    environment:
+      - DATABASE_URL=postgresql://xray_user:${DB_PASSWORD}@postgres:5432/xray_service
+      - REDIS_URL=redis://redis:6379
+      - YOOKASSA_SHOP_ID=${YOOKASSA_SHOP_ID}
+      - YOOKASSA_SECRET_KEY=${YOOKASSA_SECRET_KEY}
+      - YOOKASSA_WEBHOOK_SECRET=${YOOKASSA_WEBHOOK_SECRET}
+      - ROBOKASSA_MERCHANT_LOGIN=${ROBOKASSA_MERCHANT_LOGIN}
+      - ROBOKASSA_PASSWORD_1=${ROBOKASSA_PASSWORD_1}
+      - ROBOKASSA_PASSWORD_2=${ROBOKASSA_PASSWORD_2}
+      - BITCOIN_WALLET_ADDRESS=${BITCOIN_WALLET_ADDRESS}
+      - ETHEREUM_WALLET_ADDRESS=${ETHEREUM_WALLET_ADDRESS}
+      - USDT_TRC20_WALLET_ADDRESS=${USDT_TRC20_WALLET_ADDRESS}
+      - USDT_ERC20_WALLET_ADDRESS=${USDT_ERC20_WALLET_ADDRESS}
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  # Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    restart: unless-stopped
+
+  # Logging
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.8.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:

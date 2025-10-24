@@ -1,0 +1,115 @@
+# Prometheus конфигурация для мониторинга Xray сервиса
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'xray-cluster'
+    replica: 'prometheus-1'
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus сам себя
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Node Exporter для системных метрик
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: 
+        - 'node-exporter:9100'
+        - 'xray-server-1:9100'
+        - 'xray-server-2:9100'
+        - 'xray-server-3:9100'
+    scrape_interval: 10s
+
+  # Xray серверы
+  - job_name: 'xray-servers'
+    static_configs:
+      - targets:
+        - 'xray-server-1:443'
+        - 'xray-server-2:443'
+        - 'xray-server-3:443'
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Nginx Load Balancer
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:8080']
+    metrics_path: '/nginx_status'
+    scrape_interval: 15s
+
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 30s
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+
+  # Telegram Bot
+  - job_name: 'telegram-bot'
+    static_configs:
+      - targets: ['telegram-bot:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Xray Manager
+  - job_name: 'xray-manager'
+    static_configs:
+      - targets: ['xray-manager:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Payment Service
+  - job_name: 'payment-service'
+    static_configs:
+      - targets: ['payment-service:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # Blackbox Exporter для проверки доступности
+  - job_name: 'blackbox'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+        - 'https://xray-server-1:443'
+        - 'https://xray-server-2:443'
+        - 'https://xray-server-3:443'
+        - 'https://vk.com'
+        - 'https://yandex.ru'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # cAdvisor для контейнеров
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+
+  # Grafana
+  - job_name: 'grafana'
+    static_configs:
+      - targets: ['grafana:3000']
+    scrape_interval: 60s
