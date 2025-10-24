@@ -7,7 +7,7 @@ import logging
 
 from app.services.user_service import UserService
 from app.keyboards.main import get_url_keyboard, get_main_keyboard
-from app.utils.formatters import format_vless_url
+from app.utils.formatters import format_user_info
 
 logger = logging.getLogger(__name__)
 router = Router()
@@ -138,7 +138,7 @@ async def get_mobile_url(callback: CallbackQuery):
 ⚠️ <b>Важно:</b>
 • Не передавайте ссылку третьим лицам
 • Используйте только на ваших устройствах
-• Максимум устройств: {user.max_devices}
+• Максимум устройств: {user['max_devices']}
         """
         
         await callback.message.edit_text(mobile_text, reply_markup=get_url_keyboard())
@@ -197,7 +197,7 @@ async def get_desktop_url(callback: CallbackQuery):
 ⚠️ <b>Важно:</b>
 • Не передавайте ссылку третьим лицам
 • Используйте только на ваших устройствах
-• Максимум устройств: {user.max_devices}
+• Максимум устройств: {user['max_devices']}
         """
         
         await callback.message.edit_text(desktop_text, reply_markup=get_url_keyboard())
@@ -225,9 +225,9 @@ async def get_config_file(callback: CallbackQuery):
 📄 <b>Файл конфигурации</b>
 
 🔗 <b>Скачать конфигурацию:</b>
-• JSON конфиг: https://xray-vpn-service-seven.vercel.app/api/config/{user.telegram_id}/json
-• VLESS ссылка: https://xray-vpn-service-seven.vercel.app/api/config/{user.telegram_id}/vless
-• QR код: https://xray-vpn-service-seven.vercel.app/api/config/{user.telegram_id}/qr
+• JSON конфиг: https://xray-vpn-service-seven.vercel.app/api/config/{user['telegram_id']}/json
+• VLESS ссылка: https://xray-vpn-service-seven.vercel.app/api/config/{user['telegram_id']}/vless
+• QR код: https://xray-vpn-service-seven.vercel.app/api/config/{user['telegram_id']}/qr
 
 📱 <b>QR код для мобильных:</b>
 • Отсканируйте QR код для быстрой настройки
@@ -254,15 +254,14 @@ async def get_config_file(callback: CallbackQuery):
 async def generate_user_vless_url(user) -> str:
     """Генерация VLESS URL для пользователя"""
     try:
-        # Здесь должна быть логика генерации VLESS URL
-        # Пока возвращаем пример
-        server_ip = "89.188.113.58"  # IP вашего сервера
+        # Данные сервера
+        server_ip = "89.188.113.58"
         port = "443"
-        uuid = "2227fcce-08c2-473f-87a1-4d9595972646"  # UUID из конфига
-        public_key = "-TL01QWTd3nVXR4qdfnAea5JgUcEzwa_qvpw9KGtTRc"  # Public key
-        server_name = "www.microsoft.com"  # SNI домен
+        uuid = "2227fcce-08c2-473f-87a1-4d9595972646"
+        public_key = "-TL01QWTd3nVXR4qdfnAea5JgUcEzwa_qvpw9KGtTRc"
+        server_name = "www.microsoft.com"
         
-        vless_url = f"vless://{uuid}@{server_ip}:{port}?encryption=none&security=reality&sni={server_name}&pbk={public_key}&fp=chrome&type=tcp&headerType=none&flow=#XrayVPN-{user.telegram_id}"
+        vless_url = f"vless://{uuid}@{server_ip}:{port}?encryption=none&security=reality&sni={server_name}&pbk={public_key}&fp=chrome&type=tcp&headerType=none&flow=#XrayVPN-{user['telegram_id']}"
         
         return vless_url
         

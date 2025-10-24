@@ -203,6 +203,49 @@ async def cmd_profile(message: Message):
             "❌ Ошибка получения профиля. Попробуйте позже."
         )
 
+@router.message(Command("url"))
+async def cmd_url(message: Message):
+    """Обработчик команды /url"""
+    try:
+        user_id = message.from_user.id
+        user = await user_service.get_user_by_telegram_id(user_id)
+        
+        if not user:
+            await message.answer(
+                "❌ Пользователь не найден. Используйте /start для регистрации."
+            )
+            return
+        
+        url_text = f"""
+🔗 <b>Получение URL конфигурации</b>
+
+Выберите тип URL который вам нужен:
+
+🌐 <b>Веб-интерфейс:</b>
+• Основной сайт: https://xray-vpn-service-seven.vercel.app/
+• API документация: https://xray-vpn-service-seven.vercel.app/docs
+
+📱 <b>Мобильные клиенты:</b>
+• v2rayNG (Android)
+• Shadowrocket (iOS)
+• Clash (Windows/Mac)
+
+💻 <b>Десктопные клиенты:</b>
+• Qv2ray (Windows/Mac/Linux)
+• Clash for Windows
+• v2rayN (Windows)
+
+Выберите действие:
+        """
+        
+        await message.answer(url_text, reply_markup=get_url_keyboard())
+        
+    except Exception as e:
+        logger.error(f"Ошибка обработки команды /url: {e}")
+        await message.answer(
+            "❌ Произошла ошибка. Попробуйте позже или обратитесь в поддержку."
+        )
+
 @router.callback_query(F.data == "get_url")
 async def get_url_menu(callback: CallbackQuery):
     """Обработчик кнопки 'Получить URL'"""
