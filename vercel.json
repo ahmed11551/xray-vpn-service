@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "services/xray-manager/app/main.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "services/payment-service/app/main.py", 
+      "use": "@vercel/python"
+    },
+    {
+      "src": "services/telegram-bot/app/bot.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/xray/(.*)",
+      "dest": "services/xray-manager/app/main.py"
+    },
+    {
+      "src": "/api/payment/(.*)",
+      "dest": "services/payment-service/app/main.py"
+    },
+    {
+      "src": "/api/bot/(.*)",
+      "dest": "services/telegram-bot/app/bot.py"
+    }
+  ]
+}
